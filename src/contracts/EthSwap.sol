@@ -41,5 +41,6 @@ function sellTokens(uint _amount) public{
     msg.sender.transfer(etherAmount);
 
     emit TokensPurchased(msg.sender, address(token), _amount, rate);
+    
 }
 }

@@ -1,6 +1,9 @@
 import React, { Component } from 'react'
 import Web3 from 'web3'
+import EthSwap from '../abis/EthSwap.json'
+import Token from '../abis/Token.json'
 import Navbar from './Navbar'
+import Main from './Main'
 import './App.css'
 
 
@@ -9,7 +12,14 @@ class App extends Component {
   
   constructor(props){
     super(props)
-    this.state = { account: '', ethBalance:'0'}
+      this.state = { 
+      account: '', 
+      token:{}, 
+      ethSwap:{},
+      ethBalance:'0', 
+      tokenBalance:'0',
+      loading:true
+    }
   }
 
 
@@ -23,11 +33,31 @@ class App extends Component {
     const accounts = await web3.eth.getAccounts()
 
     this.setState({account:accounts[0]})
-    console.log(this.state.account)
 
     const ethBalance = await web3.eth.getBalance(this.state.account)
     this.setState({ethBalance})
-    console.log(this.state.ethBalance)
+    
+    const networkId =  await web3.eth.net.getId()
+    const tokenData = Token.networks[networkId]
+    if(tokenData){
+      const token = new web3.eth.Contract(Token.abi, tokenData.address)
+      this.setState({token})
+      let tokenBalance = await token.methods.balanceOf(this.state.account).call()
+      this.setState({tokenBalance:tokenBalance.toString()})
+    }else{
+      window.alert('Token not deployed to detected network')
+    }
+
+
+    const ethSwapData = EthSwap.networks[networkId]
+    if(ethSwapData){
+      const ethSwap = new web3.eth.Contract(EthSwap.abi, ethSwapData.address)
+      this.setState({ethSwap})
+    }else{
+      window.alert('Token not deployed to detected network')
+    }
+    
+    this.setState({loading:false})
   }
 
 
@@ -42,6 +72,12 @@ class App extends Component {
     }
   }
   render() {
+    let content
+    if(this.state.loading){
+      content = <p id="loader" className="text-center">Loading...</p>
+    }else{
+      content = <Main/>
+    }
     return (
       <div>
         <Navbar account={this.state.account}/>
@@ -49,7 +85,7 @@ class App extends Component {
           <div className="row">
             <main role="main" className="col-lg-12 d-flex text-center">
               <div className="content mr-auto ml-auto">
-                <h1>Hello World</h1>
+               {content}
               </div>
             </main>
           </div>
